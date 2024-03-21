@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="container"></div>
+  <style>
+    div {
+      width: 900px;
+      height: 300px;
+      background: #000;
+    }
+  </style>
+  <script>
+    class DrawWave {
+      constructor() {
+        this.container = null
+        this.canvas = null
+        this.canvasClick = null
+        this.width = null
+        this.height = null
+        this.ctx = null
+        this.ctxClick = null
+        this.scale = null
+        this.area = null
+        this.top = null
+        this.left = null
+        this.messagePos = []
+        this.data = null
+        this.coordinateDistance = null
+      }
+      init(target) {
+        this.container = document.getElementById(target)
+        this.container.style.position = "relative"
+        const { width, height, top, left } = this.container.getBoundingClientRect()
+        this.container.innerHTML = `
+          <canvas id="${target}_canvas" width="${width}" height="${height - 10}" style="margin-top: 10px;"></canvas>
+          <canvas id="${target}_canvasClick" width="${width}" height="${height}" style="position: absolute;top:0;left:0;z-index: 99;"></canvas>
+        `
+        this.canvas = document.getElementById(`${target}_canvas`)
+        this.canvasClick = document.getElementById(`${target}_canvasClick`)
+        this.width = this.canvas.width
+        this.height = this.canvas.height
+        this.ctx = this.canvas.getContext('2d')
+        this.ctxClick = this.canvasClick.getContext('2d')
+        this.scale = this.width / 26
+        this.area = (this.height - 50) / 3
+        // 设置线条的颜色、宽度和风格  
+        this.ctx.strokeStyle = 'white';  
+        this.ctx.lineWidth = 0.5;  
+      
+        // 绘制X轴  
+        this.ctx.beginPath();  
+        this.ctx.moveTo(this.scale, this.height - 20); // 起始点  
+        this.ctx.lineTo(this.scale * 25, this.height - 20); // 终点 
+        // 绘制起点
+        this.ctx.moveTo(this.scale, this.height - 25); // 起始点  
+        this.ctx.lineTo(this.scale, this.height - 18); // 终点
+        this.messagePos.push(this.scale)
+       
+        const drawScale = (data = 0) => {
+          this.ctx.moveTo(data, this.height - 25); // 起始点  
+          this.ctx.lineTo(data, this.height - 20); // 终点
+          this.messagePos.push(data)
+          data += this.scale
+          if (data < this.scale * 25) drawScale(data)
+        }
+        drawScale(this.scale)
+        // 绘制重点
+        this.ctx.moveTo(this.scale * 25, this.height - 25); // 起始点  
+        this.ctx.lineTo(this.scale * 25, this.height - 18); // 终点
+        this.messagePos.push(this.scale * 25)
+
+        this.ctx.font = '12px serif';// 设置字体大小
+        const fontWidth = this.ctx.measureText('00:00').width
+        this.ctx.strokeText('00:00', this.scale - fontWidth / 2, this.height - 5);// 绘制 "空心" 文字
+        this.ctx.strokeText('08:00', this.scale * 9 - fontWidth / 2, this.height - 5);// 绘制 "空心" 文字
+        this.ctx.strokeText('16:00', this.scale * 17 - fontWidth / 2, this.height - 5);// 绘制 "空心" 文字
+        this.ctx.strokeText('24:00', this.scale * 25 - fontWidth / 2, this.height - 5);// 绘制 "空心" 文字
+        this.ctx.stroke(); // 绘制线条  
+        this.ctx.closePath();
+      }
+      getData(data) {
+        this.ctx.clearRect(0, 0, this.width, this.height - 30);
+        if (data.length > 3) {
+          console.log('目前只支持3条，要是想支持多条，建议直接改类');
+        }
+        this.data = data.slice(0,3)
+        this.data.forEach((item, index) => this.drawArea(item, index * (this.area + 5) + 5))
+        this.canvasClick.addEventListener('mousemove', (e) => {
+          this.showMessage(e.clientX)
+        })
+        this.canvasClick.addEventListener('mouseleave', (e) => {
+          this.ctxClick.clearRect(0, 0, this.canvasClick.width, this.canvasClick.height);
+        })
+      }
+      drawArea(data, topDistance) {
+        const max = data.max
+        this.ctx.beginPath();
+        const path = { top: [], bottom: [] }  
+        for (let i in data) {
+          if (i === 'max') continue
+          const temp = Number(i.slice(0,2)) + 1
+          const size = (data[i] / max ) * this.area / 2
+          path.top.push([temp * this.scale, topDistance + this.area / 2 - size])
+          path.bottom.push([temp * this.scale, topDistance + this.area / 2 + size])   
+        }
+        this.ctx.moveTo(this.scale, topDistance + this.area / 2)
+        const randomPointArr = []
+        const randomPoint = (x, y, x2 = x, limit) => {
+          let randomY = y * (1 - Math.random())
+          while (randomY < limit) {
+            randomY = y * (1 - Math.random())
+          }
+          this.ctx.lineTo(x2, randomY)
+          randomPointArr[randomPointArr.length - 1].push([x2, randomY])
+          x2 += 1
+          if (x2 < x + this.scale && x2 < this.scale * 25) return randomPoint(x, y, x2, limit)
+        }
+        path.top.forEach(item => {
+          this.ctx.lineTo(item[0], item[1])
+          randomPointArr.push([])
+          randomPoint(item[0], item[1], item[0], topDistance)
+        })
+        this.ctx.lineTo(this.scale * 25, topDistance + this.area / 2)
+        this.ctx.moveTo(this.scale, topDistance + this.area / 2)
+        path.bottom.forEach((item, index) => {
+          this.ctx.lineTo(item[0], item[1]) 
+          for(let j in randomPointArr[index]) {
+            this.ctx.lineTo(randomPointArr[index][j][0], randomPointArr[index][j][1] + (topDistance + this.area / 2 - randomPointArr[index][j][1]) * 2)
+          }
+        })
+        this.ctx.lineTo(this.scale * 25, topDistance + this.area / 2)
+        this.ctx.fillStyle = 'white';  
+        this.ctx.fill();
+        this.ctx.closePath();
+      }
+      showMessage(x) {
+        let index = 0
+        const len = this.messagePos.length
+        for (let i = 0;i <= len - 1;i++) {
+          if (x - this.left - this.scale >= this.messagePos[i] && x - this.left - this.scale < this.messagePos[i + 1]) {
+            index = i
+            break
+          } else if (x - this.left - this.scale >= this.messagePos[i] && !this.messagePos[i + 1]) {
+            index = len - 2
+            break
+          }
+        }
+        this.ctxClick.clearRect(0, 0, this.canvasClick.width, this.canvasClick.height);
+        this.ctxClick.beginPath();
+        this.ctxClick.fillStyle = 'rgba(255, 255, 255, 0.4)';  
+        this.ctxClick.fillRect((index - 0.5) * this.scale + this.scale, 15, this.scale, this.canvasClick.height - 35);
+        this.ctxClick.moveTo(index * this.scale + this.scale, 15)
+        this.ctxClick.lineTo(index * this.scale + this.scale, this.canvasClick.height - 18)
+        this.ctxClick.strokeStyle = 'white'
+        this.ctxClick.stroke()
+        this.ctxClick.font = '12px serif';// 设置字体大小
+        this.ctxClick.strokeStyle = 'red';// 设置字体大小
+        const target = `${index >= 10 ? index : `0${index}`}:00`
+        const fontWidth = this.ctx.measureText(target).width
+        this.ctxClick.strokeText(target, (index - 0.5) * this.scale + 1.5 * this.scale - fontWidth / 2, 10);//
+        this.ctxClick.font = '12px serif';// 设置字体大小
+        this.ctxClick.strokeText(this.data[0][target], (index + 1) * this.scale  + 0.6 * this.scale, this.area / 2 + 20);//
+        this.ctxClick.font = '12px serif';// 设置字体大小
+        this.ctxClick.strokeText(this.data[1][target], (index + 1) * this.scale  + 0.6 * this.scale, 1.5 * this.area + 25);//
+        this.ctxClick.font = '12px serif';// 设置字体大小
+        this.ctxClick.strokeText(this.data[2][target], (index + 1) * this.scale  + 0.6 * this.scale, 2.5 * this.area + 30);//
+        this.ctxClick.closePath();
+      }
+    }
+    const canvas = new DrawWave()
+    canvas.init('container')
+    let temperature = { max: 0 }, stress = { max: 0 }, humidness = { max: 0 }
+    temperature = { max: 50,'00:00': 23, '01:00': 5, '02:00': 20, '03:00': 10, '04:00': 21, '05:00': 5, '06:00': 20, '07:00': 21, '08:00': 8, '09:00': 20, '10:00': 38, '11:00': 40, '12:00': 10, '13:00': 10, '14:00': 18, '15:00': 24, '16:00': 28, '17:00': 30, '18:00': 20, '19:00': 30, '20:00': 20, '21:00': 30, '22:00': 30, '23:00': 20, '24:00': 0
+    }
+    stress = { max: 50,'00:00': 23, '01:00': 5, '02:00': 20, '03:00': 10, '04:00': 21, '05:00': 5, '06:00': 20, '07:00': 21, '08:00': 8, '09:00': 20, '10:00': 38, '11:00': 40, '12:00': 10, '13:00': 10, '14:00': 18, '15:00': 24, '16:00': 28, '17:00': 30, '18:00': 20, '19:00': 30, '20:00': 20, '21:00': 30, '22:00': 30, '23:00': 20, '24:00': 0
+    }
+    humidness = { max: 50,'00:00': 23, '01:00': 5, '02:00': 20, '03:00': 10, '04:00': 21, '05:00': 5, '06:00': 20, '07:00': 21, '08:00': 8, '09:00': 20, '10:00': 38, '11:00': 40, '12:00': 10, '13:00': 10, '14:00': 18, '15:00': 24, '16:00': 28, '17:00': 30, '18:00': 20, '19:00': 30, '20:00': 20, '21:00': 30, '22:00': 30, '23:00': 20, '24:00': 0
+    }
+  canvas.getData([temperature, stress, humidness])
+</script>
+</body>
+</html>
