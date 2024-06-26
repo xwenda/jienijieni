@@ -1,0 +1,1 @@
+import{o as s,c as n,X as a}from"./chunks/framework.4a96acdd.js";const l=a("",129),p=[l],F=JSON.parse('{"title":"JavaScript","description":"","frontmatter":{},"headers":[],"relativePath":"content/js.md"}'),o={name:"content/js.md"},y=Object.assign(o,{setup(e){return(t,c)=>(s(),n("div",null,p))}});export{F as __pageData,y as default};
