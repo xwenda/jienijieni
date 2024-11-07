@@ -1,1 +1,0 @@
-import{j as t,k as r,Q as a}from"./framework.BKKfdz-C.js";const o=["href"],i={__name:"navigator",props:{target:{type:Object,required:!0}},setup(e){return(c,n)=>(t(),r("a",{href:e.target.url,style:{color:"#3eaf7c",cursor:"pointer"}},a(e.target.name),9,o))}};export{i as _};
