@@ -1,1 +1,0 @@
-import{am as s,m as i,l as a,aH as n}from"./chunks/framework.DbUzxU2Z.js";const F=JSON.parse('{"title":"JavaScript","description":"","frontmatter":{},"headers":[],"relativePath":"content/js.md","filePath":"content/js.md"}'),h={name:"content/js.md"},l=n("",94),k=[l];function p(t,e,E,r,d,g){return a(),i("div",null,k)}const c=s(h,[["render",p]]);export{F as __pageData,c as default};
